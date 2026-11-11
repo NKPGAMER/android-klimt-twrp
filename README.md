@@ -1,2 +1,3 @@
-# android-klimt-twrp
-TWRP Device Tree for Xiaomi 15T Pro (klimt)
+# TWRP Source for Xiaomi 15T Pro (klimt)
+
+(Incomplete; should not be used as source)

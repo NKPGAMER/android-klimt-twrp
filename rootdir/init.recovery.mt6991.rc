@@ -1,0 +1,182 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Klimt recovery services and device-observed boot, crypto, USB, and input behavior.
+
+# Persist second-stage recovery progress in ramoops; the next LK archives it to blackbox.
+on early-init
+    write /dev/kmsg "<6>klimt-recovery: stage=early-init"
+
+on init
+    write /dev/kmsg "<6>klimt-recovery: stage=init"
+
+on post-fs
+    write /dev/kmsg "<6>klimt-recovery: stage=post-fs"
+
+on boot
+    write /dev/kmsg "<6>klimt-recovery: stage=boot"
+
+on init
+    setprop twrp.crypto.runtime.released 0
+
+service tee-supplicant /vendor/bin/tee-supplicant
+    class core
+    user system
+    group system secure_element nfc
+    capabilities SYS_RAWIO
+    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64
+    disabled
+
+service tee-ready-delay /system/bin/sleep 1
+    class core
+    user root
+    group root
+    oneshot
+    disabled
+
+service vendor.keymint-mitee /vendor/bin/hw/android.hardware.security.keymint@3.0-service.mitee
+    class early_hal
+    user system
+    group system drmrpc
+    setenv LD_LIBRARY_PATH /system/lib64/stock-vendor-hal:/vendor/lib64:/system/lib64
+    disabled
+
+service vendor.gatekeeper_mitee /vendor/bin/hw/android.hardware.gatekeeper-service.mitee
+    class hal
+    user system
+    group system
+    setenv LD_LIBRARY_PATH /system/lib64/stock-vendor-hal:/vendor/lib64:/system/lib64
+    disabled
+
+service vendor.weaver_nxp /vendor/bin/hw/android.hardware.weaver-service.nxp
+    class hal
+    user 2902
+    group system drmrpc
+    capabilities WAKE_ALARM
+    setenv LD_LIBRARY_PATH /system/lib64/stock-vendor-hal:/odm/lib64:/vendor/lib64:/system/lib64
+    disabled
+
+# Manual-only registration probe for the stock native eSE HAL.  Do not grant
+# /dev/p73 access here and do not start Weaver while this service is running;
+# a client init call would enter the opaque TEE/eSE/APDU path.
+service vendor.secure_element_hal_service /vendor/bin/hw/vendor.xiaomi.hardware.secure_element-service
+    class hal
+    user system
+    group system secure_element nfc
+    setenv LD_LIBRARY_PATH /system/lib64/stock-vendor-hal:/vendor/lib64:/odm/lib64:/system/lib64
+    disabled
+    oneshot
+
+# Manual-only AuthSecret dependency for the recovery Weaver registration probe.
+# Keep this disabled and oneshot: recovery must never start it automatically.
+service miweaver_hal_service /odm/bin/hw/vendor.xiaomi.hardware.authsecretd
+    class hal
+    user system
+    group system drmrpc
+    setenv LD_LIBRARY_PATH /odm/lib64:/vendor/lib64:/system/lib64
+    disabled
+    oneshot
+
+on property:fstab.additional=1 && property:twrp.crypto.runtime.released=0
+    # Keep one ext4 superblock mount: TWRP owns /persist and vendor services use a bind view.
+    mkdir /persist 0755 root root
+    mount ext4 /dev/block/by-name/persist /persist noatime nosuid nodev noauto_da_alloc nodelalloc commit=1
+    restorecon_recursive /persist
+    mkdir /mnt/vendor/persist 0755 root root
+    mount none /persist /mnt/vendor/persist bind
+    mkdir /mnt/vendor/persist/data 0755 system system
+    mkdir /mnt/vendor/persist/fdsd 0755 system system
+    chmod 0660 /dev/tee0
+    chown system system /dev/tee0
+    chmod 0660 /dev/teepriv0
+    chown system system /dev/teepriv0
+    chmod 0660 /dev/rpmb0
+    chown system system /dev/rpmb0
+    chmod 0660 /dev/0:0:0:49476
+    chown system system /dev/0:0:0:49476
+    chmod 0660 /dev/ufs-bsg0
+    chown system system /dev/ufs-bsg0
+    start tee-supplicant
+    start tee-ready-delay
+
+on property:init.svc.tee-ready-delay=stopped && property:twrp.crypto.runtime.released=0
+    start vendor.keymint-mitee
+    start vendor.gatekeeper_mitee
+    # Safety gate: Weaver is started manually after the GUI is available so
+    # startup cannot enter TWRP's legacy writable CE unlock path.
+
+on init
+    setprop sys.usb.configfs 1
+    setprop sys.usb.controller "16701000.usb0"
+
+on post-fs
+    mkdir /config/usb_gadget/g1/functions/ffs.mtp
+    write /config/usb_gadget/g1/os_desc/use 1
+    write /config/usb_gadget/g1/os_desc/b_vendor_code 0x1
+    write /config/usb_gadget/g1/os_desc/qw_sign "MSFT100"
+    symlink /config/usb_gadget/g1/configs/b.1 /config/usb_gadget/g1/os_desc/b.1
+    mkdir /dev/usb-ffs/mtp 0770 mtp mtp
+    mount functionfs mtp /dev/usb-ffs/mtp rmode=0770,fmode=0660,uid=1024,gid=1024,no_disconnect=1
+    write /config/usb_gadget/g1/functions/ffs.mtp/os_desc/interface.MTP/compatible_id "MTP"
+    setprop sys.usb.mtp.device_type 3
+    setprop sys.usb.mtp.batchcancel 1
+
+on property:sys.usb.config=none && property:sys.usb.configfs=1
+    write /config/usb_gadget/g1/UDC "none"
+    setprop sys.usb.ffs.mtp.ready 0
+    rm /config/usb_gadget/g1/configs/b.1/f1
+    rm /config/usb_gadget/g1/configs/b.1/f2
+
+on property:sys.usb.config=mtp,adb && property:sys.usb.configfs=1
+    start adbd
+
+on property:sys.usb.ffs.ready=1 && property:sys.usb.ffs.mtp.ready=1 && property:sys.usb.config=mtp,adb && property:sys.usb.configfs=1
+    write /config/usb_gadget/g1/configs/b.1/strings/0x409/configuration "mtp_adb"
+    write /config/usb_gadget/g1/idVendor 0x18D1
+    write /config/usb_gadget/g1/idProduct 0x4EE2
+    symlink /config/usb_gadget/g1/functions/ffs.mtp /config/usb_gadget/g1/configs/b.1/f1
+    symlink /config/usb_gadget/g1/functions/ffs.adb /config/usb_gadget/g1/configs/b.1/f2
+    write /config/usb_gadget/g1/UDC ${sys.usb.controller}
+    setprop sys.usb.state ${sys.usb.config}
+
+
+on boot
+    exec u:r:update_engine:s0 root root -- /system/bin/mtk_plpath_utils
+
+# Start stock recovery adbd independently of the TWRP UI process.
+on post-fs
+    # The generic recovery init creates an empty /sdcard mount point on init.
+    # Klimt uses /data/media/0 directly, so remove that compatibility directory
+    # after init has run and publish the real storage path to recovery services.
+    export EXTERNAL_STORAGE /data/media/0
+    rmdir /sdcard
+    setprop sys.usb.config adb
+
+# THP touch HAL: mounts stock partitions, starts servicemanager + touch HAL
+# under LD_PRELOAD shims so Goodix GT9916 THP mode computes finger coordinates
+# and injects them via /dev/input.
+service thp-touch /system/bin/sh /thp/touch_init.sh
+    class late_start
+    user root
+    group root system
+    seclabel u:r:recovery:s0
+    # NOT oneshot — touch_init.sh exec's the HAL as its final step
+
+# Load the device-exact credential, touchscreen, and haptics modules after
+# platform modules. Touch modules are in platform ramdisk but loaded manually
+# here during second-stage init to avoid kernel panics from early loading.
+on init
+    insmod /lib/modules/nxp_i2c.ko
+    insmod /lib/modules/p73.ko
+    # The repacked touch firmware lives in the recovery-owned /ram tree.
+    write /sys/module/firmware_class/parameters/path /ram/firmware,/vendor/firmware,/odm/firmware
+    # Load SCP driver first (provides symbols for goodix)
+    insmod /lib/modules/scp.ko
+    insmod /lib/modules/xiaomi_touch_dali.ko
+    insmod /lib/modules/goodix_core_dali.ko
+    insmod /lib/modules/si_haptic.ko
+
+# Module probing and ueventd publish the character node asynchronously, so
+# wait for the node before starting the THP touch HAL. The touch_init.sh
+# script handles its own waiting for mapper nodes and /dev/xiaomi-touch.
+on boot
+    wait /dev/xiaomi-touch 10
+    start thp-touch
