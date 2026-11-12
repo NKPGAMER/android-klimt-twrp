@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2025 The TWRP Open Source Project
+# Copyright (C) 2025-2026 The TWRP Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,5 +17,5 @@
 PRODUCT_MAKEFILES := $(LOCAL_DIR)/twrp_klimt.mk
 
 COMMON_LUNCH_CHOICES := \
-    twrp_klimt-ap2a-eng \
-    twrp_klimt-bp2a-eng
+    twrp_klimt-ap2a-eng \   # twrp-14.1
+    twrp_klimt-bp2a-eng     # twrp-16.0

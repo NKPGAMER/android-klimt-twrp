@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2025 The TWRP Open Source Project
+# Copyright (C) 2025-2026 The TWRP Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,3 +40,82 @@ $(call inherit-product, vendor/twrp/config/common.mk)
 # API
 PRODUCT_SHIPPING_API_LEVEL := 35
 PRODUCT_TARGET_VNDK_VERSION := 35
+
+# Enable Fuse Passthrough
+PRODUCT_PROPERTY_OVERRIDES += persist.sys.fuse.passthrough.enable=true
+
+# TWRP in Vendor Boot
+PRODUCT_PROPERTY_OVERRIDES += ro.twrp.vendor_boot=true
+
+# A/B OTA Partitions
+AB_OTA_UPDATER := true
+ENABLE_VIRTUAL_AB := true
+TARGET_ENFORCE_AB_OTA_PARTITION_LIST := true
+AB_OTA_PARTITIONS += \
+    apusys \
+    audio_dsp \
+    boot \
+    ccu \
+    connsys_gnss \
+    countrycode \
+    dpm \
+    dtbo \
+    gpueb \
+    gz \
+    init_boot \
+    lk \
+    logo \
+    mcf_ota \
+    mcupm \
+    modem \
+    mvpu_algo \
+    odm \
+    odm_dlkm \
+    pi_img \
+    preloader_raw \
+    product \
+    pvmfw \
+    scp \
+    spmfw \
+    sspm \
+    system \
+    system_dlkm \
+    system_ext \
+    tee \
+    vbmeta \
+    vbmeta_system \
+    vbmeta_vendor \
+    vcp \
+    vendor \
+    vendor_boot \
+    vendor_dlkm \
+    mi_ext
+
+PRODUCT_PACKAGES += \
+    update_engine \
+    update_engine_sideload \
+    update_verifier \
+    checkpoint_gc
+
+# Bootctrl HAL (MTK A/B slot switching)
+PRODUCT_PACKAGES += \
+    android.hardware.boot@1.2-mtkimpl \
+    android.hardware.boot@1.2-mtkimpl.recovery
+
+PRODUCT_PACKAGES_DEBUG += \
+    bootctrl
+
+# Dynamic Partitions
+PRODUCT_USE_DYNAMIC_PARTITIONS := true
+
+# MTK plpath utils
+PRODUCT_PACKAGES += \
+    mtk_plpath_utils \
+    mtk_plpath_utils.recovery
+
+# Otacert
+PRODUCT_EXTRA_RECOVERY_KEYS += \
+    $(DEVICE_PATH)/security/miui_releasekey
+
+# Soong namespaces
+PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH)

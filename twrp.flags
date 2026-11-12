@@ -1,0 +1,74 @@
+# Android fstab file.
+# The filesystem that contains the filesystem checker binary (typically /system) cannot
+# specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
+
+#<mnt_point>        <type>    <device>                            <device2>                         <mnt_flags and options>
+/metadata           f2fs      /dev/block/by-name/metadata         flags=display="Metadata";backup=1
+/data               f2fs      /dev/block/by-name/userdata         flags=display="Data";fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized,keydirectory=/metadata/vold/metadata_encryption
+/cache              ext4      /dev/block/by-name/rescue           flags=display="Cache";wipeingui;wipeduringfactoryreset
+
+# Dynamic
+/mi_ext             erofs     /dev/block/mapper/mi_ext            flags=display="MI EXT";logical
+/mi_ext             ext4      /dev/block/mapper/mi_ext            flags=display="MI EXT";logical
+
+# Super
+/super              emmc      /dev/block/by-name/super            flags=display="Super Image";backup=1;flashimg=1
+
+# Boot
+/boot               emmc      /dev/block/by-name/boot             flags=display="Kernel Boot Image";slotselect;backup=1;flashimg=1
+/init_boot          emmc      /dev/block/by-name/init_boot        flags=display="Init Boot Image";slotselect;backup=1;flashimg=1
+/vendor_boot        emmc      /dev/block/by-name/vendor_boot      flags=display="Vendor Boot Image";slotselect;backup=1;flashimg=1
+/dtbo               emmc      /dev/block/by-name/dtbo             flags=display="DTBO Image";slotselect;backup=1;flashimg=1
+/vbmeta             emmc      /dev/block/by-name/vbmeta           flags=display="Verified Boot (vbmeta)";slotselect;backup=1;flashimg=1
+/vbmeta_system      emmc      /dev/block/by-name/vbmeta_system    flags=display="System VBmeta";slotselect;backup=1;flashimg=1
+/vbmeta_vendor      emmc      /dev/block/by-name/vbmeta_vendor    flags=display="Vendor VBmeta";slotselect;backup=1;flashimg=1
+
+# Persistent Firmware & NV
+/persist            ext4      /dev/block/by-name/persist          flags=display="Persistent";backup=1
+/protect_f          ext4      /dev/block/by-name/protect1         flags=display="Protect_F";backup=1
+/protect_s          ext4      /dev/block/by-name/protect2         flags=display="Protect_S";backup=1
+/nvdata             ext4      /dev/block/by-name/nvdata           flags=display="NVData";backup=1
+/nvcfg              ext4      /dev/block/by-name/nvcfg            flags=display="NVConfig";backup=1
+/nvram              emmc      /dev/block/by-name/nvram            flags=display="NVRam";backup=1;flashimg=1
+/proinfo            emmc      /dev/block/by-name/proinfo          flags=display="ProInfo";backup=1
+/bootloader2        emmc      /dev/block/by-name/bootloader2      flags=display="Bootloader 2";backup=1
+/logo               emmc      /dev/block/by-name/logo             flags=display="Logo";slotselect;backup=1;flashimg=1
+/expdb              emmc      /dev/block/by-name/expdb            flags=display="ExpDB";backup=1
+/seccfg             emmc      /dev/block/by-name/seccfg           flags=display="SecCfg";backup=1
+
+# TEE & Security
+/tee1               emmc      /dev/block/by-name/tee1             flags=display="TEE 1";backup=1
+/tee2               emmc      /dev/block/by-name/tee2             flags=display="TEE 2";backup=1
+/scp1               emmc      /dev/block/by-name/scp1             flags=display="SCP 1";backup=1
+/scp2               emmc      /dev/block/by-name/scp2             flags=display="SCP 2";backup=1
+/sspm1              emmc      /dev/block/by-name/sspm1            flags=display="SSPM 1";backup=1
+/sspm2              emmc      /dev/block/by-name/sspm2            flags=display="SSPM 2";backup=1
+/dpm1               emmc      /dev/block/by-name/dpm1             flags=display="DPM 1";backup=1
+/dpm2               emmc      /dev/block/by-name/dpm2             flags=display="DPM 2";backup=1
+/mcupm1             emmc      /dev/block/by-name/mcupm1           flags=display="MCUPM 1";backup=1
+/mcupm2             emmc      /dev/block/by-name/mcupm2           flags=display="MCUPM 2";backup=1
+
+# Modem & Connectivity
+/modem              emmc      /dev/block/by-name/modem            flags=display="Modem";slotselect;backup=1;flashimg=1
+/md1dsp             emmc      /dev/block/by-name/md1dsp           flags=display="Modem DSP";backup=1
+/gz1                emmc      /dev/block/by-name/gz1              flags=display="GenieZone 1";backup=1
+/gz2                emmc      /dev/block/by-name/gz2              flags=display="GenieZone 2";backup=1
+/ccu                emmc      /dev/block/by-name/ccu              flags=display="CCU";backup=1
+/vcp                emmc      /dev/block/by-name/vcp              flags=display="VCP";backup=1
+/gpueb              emmc      /dev/block/by-name/gpueb            flags=display="GPUEB";backup=1
+/mcf_ota            emmc      /dev/block/by-name/mcf_ota          flags=display="MCF OTA";slotselect;backup=1;flashimg=1
+/mvpu_algo1         emmc      /dev/block/by-name/mvpu_algo1       flags=display="MVPU Algo 1";backup=1
+/mvpu_algo2         emmc      /dev/block/by-name/mvpu_algo2       flags=display="MVPU Algo 2";backup=1
+/apusys1            emmc      /dev/block/by-name/apusys1          flags=display="APUSYS 1";backup=1
+/apusys2            emmc      /dev/block/by-name/apusys2          flags=display="APUSYS 2";backup=1
+/spmfw              emmc      /dev/block/by-name/spmfw            flags=display="SPMFW";backup=1
+/pi_img             emmc      /dev/block/by-name/pi_img           flags=display="PI Image";backup=1
+/audio_dsp          emmc      /dev/block/by-name/audio_dsp        flags=display="Audio DSP";backup=1
+/connsys_wifi       emmc      /dev/block/by-name/connsys_wifi     flags=display="Connsys WiFi";backup=1
+/connsys_bt         emmc      /dev/block/by-name/connsys_bt       flags=display="Connsys Bluetooth";backup=1
+/connsys_gnss       emmc      /dev/block/by-name/connsys_gnss     flags=display="Connsys GNSS";backup=1
+/countrycode        emmc      /dev/block/by-name/countrycode      flags=display="Country Code";backup=1
+/preloader_raw      emmc      /dev/block/by-name/preloader_raw    flags=display="Preloader";slotselect;backup=1;flashimg=1
+
+# Removable storage
+/usb_otg            auto      /dev/block/sdd1     /dev/block/sdd  flags=display="USB OTG";storage;wipeingui;removable;fsflags=utf8

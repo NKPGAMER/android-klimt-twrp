@@ -1,0 +1,1 @@
+require board=klimt|2506BPN68G
